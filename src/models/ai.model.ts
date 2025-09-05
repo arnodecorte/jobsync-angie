@@ -28,7 +28,7 @@ export enum AiProvider {
 }
 
 export enum OllamaModel {
-  LLAMA3_1 = "llama3.1",
+  LLAMA3_1 = "llama3.1"
 }
 
 export enum OpenaiModel {

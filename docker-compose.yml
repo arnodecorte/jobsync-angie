@@ -6,16 +6,16 @@ services:
       dockerfile: Dockerfile
     image: jobsync_app_image
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       NODE_ENV: production
       DATABASE_URL: file:/data/dev.db
       # Change your initial username and password here
-      USER_EMAIL: admin@example.com
+      USER_EMAIL: arnodecorte00@gmail.com
       USER_PASSWORD: password123
       # Refer to readme to generate auth secret
       AUTH_SECRET: Cft42eLmgapfLoot7ByiCL9ToNfbqZ4xaaMuOJsbm+9u
-      NEXTAUTH_URL: http://localhost:3000
-      AUTH_TRUST_HOST: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3001
+      AUTH_TRUST_HOST: http://localhost:3001
     volumes:
       - ./jobsyncdb/data:/data
