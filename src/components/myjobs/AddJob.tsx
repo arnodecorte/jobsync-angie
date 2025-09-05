@@ -7,7 +7,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { addJob, updateJob } from "@/actions/job.actions";
+import {
+  addJob,
+  updateJob,
+  findOrCreateEntities, // Import the new action
+} from "@/actions/job.actions";
 import { Loader, PlusCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { useForm } from "react-hook-form";
@@ -70,13 +74,23 @@ export function AddJob({
   const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [isFetching, setIsFetching] = useState(false);
+
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
     defaultValues: {
+      // --- START OF CHANGES ---
+      // Ensure all fields have a default value to be "controlled" from the start.
+      title: "",
+      company: "",
+      location: "",
+      jobUrl: "",
+      // --- END OF CHANGES ---
       type: Object.keys(JOB_TYPES)[0],
       dueDate: addDays(new Date(), 3),
       status: jobStatuses[0].id,
       salaryRange: "1",
+      jobDescription: "",
     },
   });
 
@@ -129,29 +143,123 @@ export function AddJob({
     }, 500);
   };
 
-  function onSubmit(data: z.infer<typeof AddJobFormSchema>) {
-    startTransition(async () => {
-      const { success, message } = editJob
-        ? await updateJob(data)
-        : await addJob(data);
-      reset();
-      setDialogOpen(false);
-      if (!success) {
-        toast({
-          variant: "destructive",
-          title: "Error!",
-          description: message,
-        });
+  async function onSubmit(values: z.infer<typeof AddJobFormSchema>) {
+    // --- DEBUG LOG 2: See what data the form submits ---
+    console.log("Submitting form with values:", values);
+
+    startTransition(() => {
+      if (editJob) {
+        updateJob(values)
+          .then(() => {
+            toast({
+              variant: "success",
+              description: "Job updated successfully",
+            });
+            resetEditJob();
+            redirect("/dashboard/myjobs");
+          })
+          .catch((error) => {
+            toast({
+              variant: "destructive",
+              title: "Error!",
+              description: error.message,
+            });
+          });
+      } else {
+        addJob(values)
+          .then(() => {
+            toast({
+              variant: "success",
+              description: "Job added successfully",
+            });
+            reset();
+            redirect("/dashboard/myjobs");
+          })
+          .catch((error) => {
+            toast({
+              variant: "destructive",
+              title: "Error!",
+              description: error.message,
+            });
+          });
       }
-      redirect("/dashboard/myjobs");
-    });
-    toast({
-      variant: "success",
-      description: `Job has been ${
-        editJob ? "updated" : "created"
-      } successfully`,
     });
   }
+
+  const handleFetchJobDetails = async () => {
+    const jobUrl = form.getValues("jobUrl");
+    if (!jobUrl || !jobUrl.includes("linkedin.com")) {
+      toast({
+        variant: "destructive",
+        title: "Invalid URL",
+        description: "Please provide a valid LinkedIn job URL.",
+      });
+      return;
+    }
+
+    setIsFetching(true);
+    try {
+      const response = await fetch("/api/scrape-job-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: jobUrl }),
+      });
+
+      const scrapedData = await response.json();
+
+      if (!response.ok || scrapedData.error) {
+        throw new Error(scrapedData.error || "Failed to fetch job details.");
+      }
+
+      // --- START OF NEW LOGIC ---
+      // Call the backend to get IDs for the scraped string values
+      const entityResult = await findOrCreateEntities({
+        title: scrapedData.title,
+        company: scrapedData.company_name,
+        location: scrapedData.location,
+      });
+
+      // First, handle the possibility of an undefined result
+      if (!entityResult) {
+        throw new Error("Server did not respond when processing entities.");
+      }
+
+      // Now, use the 'success' property as a type guard
+      if (!entityResult.success) {
+        // TypeScript now knows that 'message' exists on entityResult
+        throw new Error(entityResult.message);
+      }
+
+      const currentValues = form.getValues();
+
+      // After the success check, TypeScript knows that 'data' exists
+      form.reset({
+        ...currentValues,
+        title: entityResult.data.titleId,
+        company: entityResult.data.companyId,
+        location: entityResult.data.locationId,
+        jobDescription: scrapedData.description,
+        jobUrl: scrapedData.link,
+      });
+
+      toast({
+        title: "Success",
+        description: "Job details have been pre-filled.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Full scraping error:", error); // Add this line
+      const msg =
+        error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({
+        variant: "destructive",
+        title: "Scraping Failed",
+        description: msg,
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const pageTitle = editJob ? "Edit Job" : "Add Job";
 
@@ -211,13 +319,26 @@ export function AddJob({
                     control={form.control}
                     name="jobUrl"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Job URL</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Copy and paste job link here"
-                            {...field}
-                          />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="Copy and paste job link here"
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleFetchJobDetails}
+                              disabled={isFetching}
+                            >
+                              {isFetching ? (
+                                <Loader className="h-4 w-4 shrink-0 spinner" />
+                              ) : (
+                                "Fetch"
+                              )}
+                            </Button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -518,3 +639,4 @@ export function AddJob({
     </>
   );
 }
+

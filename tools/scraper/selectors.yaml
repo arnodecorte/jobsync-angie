@@ -1,0 +1,44 @@
+{
+    "login": { # Selectors for the login page
+        "username_field": "input#username", # Selector for the username input field
+        "password_field": "input#password", # Selector for the password input field
+        "submit_button": "button[type='submit']" # Selector for the login submit button
+    },
+    "job_listings": { # Selectors for the job listings page
+        "job_cards": "ul.fXILIEnQzbdGeMStzmoAxuoADNOjwtmGAQARs > li", # Selector for individual job cards
+        "job_title": "div.artdeco-entity-lockup__title a > span > strong", # Updated selector for the job title
+        "company_name": "div.artdeco-entity-lockup__subtitle span", # Updated selector for the company name
+        "location": "div.artdeco-entity-lockup__caption ul > li > span", # Updated selector for the job location
+        "posting_date": "ul.job-card-container__metadata-wrapper > li > time", # Selector for the job posting date
+        "number_of_applicants": "ul.job-card-container__metadata-wrapper > li:nth-child(2) > span", # Selector for the number of applicants
+        "tags": "div.job-details-fit-level-preferences > button > span", # Selector for job tags
+        "job_link": "a.job-card-container__link" # Selector for the job link
+    },
+    "pagination": { # Selectors for pagination
+        "next_page_button": "button.jobs-search-pagination__button--next" # Selector for the next page button
+    },
+    "job_details": { # Selectors for the job details page
+        "job_title": "a.job-card-container__link.job-card-list__title--link > span > strong", # Selector for the job title in details
+        "company_name": "div.artdeco-entity-lockup__subtitle > span", # Selector for the company name in details
+        "location": "div.artdeco-entity-lockup__caption > ul > li > span", # Selector for the job location in details
+        "posting_date": "span.tvm__text.tvm__text--low-emphasis", # Selector for the job posting date in details
+        "number_of_applicants": "span.tvm__text.tvm__text--low-emphasis", # Selector for the number of applicants in details
+        "tags": "div.job-details-fit-level-preferences > button > span", # Selector for job tags in details
+        "description": "div.jobs-description__content", # Selector for the job description
+        "company_logo": "div.job-card-list__logo img", # Selector for the company logo
+        "company_stats": "div.t-14.mt5", # Selector for company statistics
+        "company_description": "p.jobs-company__company-description", # Selector for the company description
+        "job_link": "div.display-flex.justify-space-between h1.t-24.t-bold.inline a[href]" # Refined selector to extract the href attribute for the job link
+    },
+    "navigation": { # Selectors for navigation elements
+        "thumbnail_list": "ul.fXILIEnQzbdGeMStzmoAxuoADNOjwtmGAQARs", # Selector for the list of thumbnails
+        "thumbnail": "li.EnrZolVkKAgHvGNLjNgAPEWqiTrcdnpo", # Selector for an individual thumbnail
+        "scrollable_area": "div.jobs-search-results-list" # Selector for the scrollable area
+    },
+    "company_profile": { # Selectors for the company profile page
+    "show_more_company": "a[aria-label='Show more about the company']", # Selector for the "Show more" link in the company profile
+    "company_about_button": "a.org-page-navigation__item-anchor", # Selector for the "About" button in the company profile
+    "company_about_description": "p.break-words.white-space-pre-wrap.t-black--light.text-body-medium", # Selector for the company description in the About section
+    "company_about_website": "span.link-without-visited-state" # Selector for the company website link in the About section
+    }
+}

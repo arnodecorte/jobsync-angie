@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/scrape-job-details/route.ts": {
+      "includeFiles": "tools/scraper/**"
+    }
+  }
+}

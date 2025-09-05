@@ -3,28 +3,13 @@ import { z } from "zod";
 export const AddJobFormSchema = z.object({
   id: z.string().optional(),
   userId: z.string().optional(),
-  title: z
-    .string({
-      required_error: "Job title is required.",
-    })
-    .min(2, {
-      message: "Job title must be at least 2 characters.",
-    }),
-  company: z
-    .string({
-      required_error: "Company name is required.",
-    })
-    .min(2, {
-      message: "Company name must be at least 2 characters.",
-    }),
-  location: z
-    .string({
-      required_error: "Location is required.",
-    })
-    .min(2, {
-      message: "Location name must be at least 2 characters.",
-    }),
-  type: z.string().min(1),
+  // Allow title, company, and location to be a plain string (for new entries)
+  // or a UUID string (for existing selections). The backend will figure it out.
+  title: z.string().min(1, "Job title is required"),
+  company: z.string().min(1, "Company is required"),
+  location: z.string().min(1, "Location is required"),
+  jobUrl: z.string().url().optional().or(z.literal("")),
+  type: z.string(),
   source: z
     .string({
       required_error: "Source is required.",
@@ -55,7 +40,6 @@ export const AddJobFormSchema = z.object({
     .min(10, {
       message: "Job description must be at least 10 characters.",
     }),
-  jobUrl: z.string().optional(),
-  applied: z.boolean().default(false),
   resume: z.string().optional(),
+  applied: z.boolean().default(false),
 });

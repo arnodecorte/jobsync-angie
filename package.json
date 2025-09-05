@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
+    "build": "pip install -r tools/scraper/requirements.txt && next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "node ./prisma/seed.js",
@@ -13,6 +13,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.31.9",
     "@hookform/resolvers": "^3.4.2",
     "@langchain/community": "^0.2.18",
     "@langchain/openai": "^0.2.1",
