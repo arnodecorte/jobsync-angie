@@ -7,7 +7,7 @@ import prisma from "@/lib/db"; // Use default import
 import { v4 as uuidv4 } from "uuid";
 import { JOB_TYPES, JobStatus } from "@/models/job.model";
 import { handleError } from "@/lib/utils";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/utils/user.utils";
 
 // --- START OF CHANGES ---
 // Define an explicit return type for the action
@@ -25,8 +25,7 @@ export async function findOrCreateEntities(
   }
 ): Promise<FindOrCreateResult | undefined> { // Apply the explicit return type
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
     if (!user || !user.id) {
       throw new Error("Not authenticated");
     }
@@ -69,7 +68,7 @@ function isUUID(str: string) {
   return uuidRegex.test(str);
 }
 
-// Helper function to find an entity by name or create it if it doesn't exist
+// Helper function to find an entity by name (case-insensitive) or create it if it doesn't exist
 async function getOrCreateId(
   model: "jobTitle" | "company" | "location",
   name: string,
@@ -79,9 +78,11 @@ async function getOrCreateId(
     return name; // It's already an ID, so just return it.
   }
 
-  // It's a string name, so let's find or create it.
+  // Use a case-insensitive search for SQLite by comparing lowercased values
   const existing = await (prisma as any)[model].findFirst({
-    where: { label: { equals: name, mode: "insensitive" } },
+    where: {
+      value: name.toLowerCase(),
+    },
   });
 
   if (existing) {
@@ -126,8 +127,7 @@ export const getJobsList = async (
   filter?: string
 ): Promise<any | undefined> => {
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
 
     if (!user || !user.id) {
       throw new Error("Not authenticated");
@@ -186,8 +186,7 @@ export const getJobsList = async (
 };
 
 export async function* getJobsIterator(filter?: string, pageSize = 200) {
-  const session = await auth();
-  const user = session?.user;
+  const user = await getCurrentUser();
   if (!user || !user.id) {
     throw new Error("Not authenticated");
   }
@@ -242,8 +241,7 @@ export const getJobDetails = async (
     if (!jobId) {
       throw new Error("Please provide job id");
     }
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
 
     if (!user) {
       throw new Error("Not authenticated");
@@ -277,8 +275,7 @@ export const createLocation = async (
   label: string
 ): Promise<any | undefined> => {
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
 
     if (!user || !user.id) {
       throw new Error("Not authenticated");
@@ -303,8 +300,7 @@ export const createLocation = async (
 
 export async function addJob(data: z.infer<typeof AddJobFormSchema>) {
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
     if (!user || !user.id) {
       return { success: false, message: "Not authenticated" };
     }
@@ -347,8 +343,7 @@ export const updateJob = async (
   data: z.infer<typeof AddJobFormSchema>
 ): Promise<any | undefined> => {
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
 
     if (!user || !user.id) {
       throw new Error("Not authenticated");
@@ -409,8 +404,7 @@ export const updateJobStatus = async (
   status: JobStatus
 ): Promise<any | undefined> => {
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
 
     if (!user || !user.id) {
       throw new Error("Not authenticated");
@@ -453,8 +447,7 @@ export const deleteJobById = async (
   jobId: string
 ): Promise<any | undefined> => {
   try {
-    const session = await auth();
-    const user = session?.user;
+    const user = await getCurrentUser();
 
     if (!user || !user.id) {
       throw new Error("Not authenticated");
