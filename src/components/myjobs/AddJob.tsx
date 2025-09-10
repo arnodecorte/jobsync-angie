@@ -50,6 +50,8 @@ import { Combobox } from "../ComboBox";
 import { Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
+// importing router to trigger refreshes
+import { useRouter } from "next/navigation";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -75,6 +77,8 @@ export function AddJob({
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isFetching, setIsFetching] = useState(false);
+  // initializing router
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
@@ -145,13 +149,15 @@ export function AddJob({
 
   function onSubmit(values: z.infer<typeof AddJobFormSchema>) {
     startTransition(async () => {
-      const res = await addJob(values);
+      const res = await (editJob ? updateJob(values) : addJob(values));
       form.reset();
       setDialogOpen(false);
-      AddJob;
+      router.refresh();
     });
     toast({
-      description: "Job has been created successfully",
+      description: `Job has been ${
+        editJob ? "updated" : "created"
+      } successfully`,
     });
   }
   const handleFetchJobDetails = async () => {
@@ -201,13 +207,16 @@ export function AddJob({
       const currentValues = form.getValues();
 
       // After the success check, TypeScript knows that 'data' exists
-      form.reset({
-        ...currentValues,
-        title: entityResult.data.titleId,
-        company: entityResult.data.companyId,
-        location: entityResult.data.locationId,
-        jobDescription: scrapedData.description,
-        jobUrl: scrapedData.link,
+      startTransition(() => {
+        router.refresh();
+        form.reset({
+          ...currentValues,
+          title: entityResult.data.titleId,
+          company: entityResult.data.companyId,
+          location: entityResult.data.locationId,
+          jobDescription: scrapedData.description,
+          jobUrl: scrapedData.link,
+        });
       });
 
       toast({

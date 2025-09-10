@@ -8,9 +8,13 @@ import json
 from dotenv import load_dotenv
 import os
 import yaml
-import sys # Add this import
+import sys
+import io
 
 # --- START OF CHANGES ---
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Get the absolute path of the directory where the script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
