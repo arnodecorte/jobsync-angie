@@ -143,49 +143,17 @@ export function AddJob({
     }, 500);
   };
 
-  async function onSubmit(values: z.infer<typeof AddJobFormSchema>) {
-    // --- DEBUG LOG 2: See what data the form submits ---
-    console.log("Submitting form with values:", values);
-
-    startTransition(() => {
-      if (editJob) {
-        updateJob(values)
-          .then(() => {
-            toast({
-              variant: "success",
-              description: "Job updated successfully",
-            });
-            resetEditJob();
-            redirect("/dashboard/myjobs");
-          })
-          .catch((error) => {
-            toast({
-              variant: "destructive",
-              title: "Error!",
-              description: error.message,
-            });
-          });
-      } else {
-        addJob(values)
-          .then(() => {
-            toast({
-              variant: "success",
-              description: "Job added successfully",
-            });
-            reset();
-            redirect("/dashboard/myjobs");
-          })
-          .catch((error) => {
-            toast({
-              variant: "destructive",
-              title: "Error!",
-              description: error.message,
-            });
-          });
-      }
+  function onSubmit(values: z.infer<typeof AddJobFormSchema>) {
+    startTransition(async () => {
+      const res = await addJob(values);
+      form.reset();
+      setDialogOpen(false);
+      AddJob;
+    });
+    toast({
+      description: "Job has been created successfully",
     });
   }
-
   const handleFetchJobDetails = async () => {
     const jobUrl = form.getValues("jobUrl");
     if (!jobUrl || !jobUrl.includes("linkedin.com")) {
