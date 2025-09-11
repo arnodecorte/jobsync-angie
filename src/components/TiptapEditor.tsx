@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { ControllerRenderProps } from "react-hook-form";
 import { Toggle } from "./ui/toggle";
 import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
+import { useEffect } from "react";
 
 const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
   const editor = useEditor({
@@ -41,6 +42,12 @@ const Tiptap = ({ field }: { field: ControllerRenderProps<any, any> }) => {
       field.onChange(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== field.value) {
+      editor.commands.setContent(field.value, false);
+    }
+  }, [field.value, editor]);
 
   return (
     <div className="flex flex-col gap-2">
