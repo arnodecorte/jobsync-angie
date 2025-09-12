@@ -36,6 +36,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Create a virtual environment for Python dependencies
+RUN python3 -m venv /venv && \
+    . /venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install -r tools/scraper/requirements.txt
+
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
@@ -58,6 +64,14 @@ RUN \
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
+
+# Install Python and venv
+RUN apt-get update && apt-get install -y python3 python3-pip
+
+# Create a virtual environment for Python dependencies
+COPY --from=builder /venv /venv
+# Activate venv
+ENV PATH="/venv/bin:$PATH"
 
 # Uncomment the following line in case you want to disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED 1
