@@ -14,7 +14,7 @@ export const getAllJobTitles = async (): Promise<any | undefined> => {
         createdBy: user?.id,
       },
     });
-    return list.filter((jt) => jt !== null);
+    return list;
   } catch (error) {
     const msg = "Failed to fetch job title list. ";
     return handleError(error, msg);

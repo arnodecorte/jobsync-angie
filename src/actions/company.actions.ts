@@ -77,7 +77,7 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
         createdBy: user.id,
       },
     });
-    return companies.filter((c) => c !== null);
+    return companies;
   } catch (error) {
     const msg = "Failed to fetch all companies. ";
     return handleError(error, msg);
