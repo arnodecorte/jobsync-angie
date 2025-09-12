@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 import json
@@ -10,8 +11,22 @@ import os
 import yaml
 import sys
 import io
+import tempfile
+import shutil
 
-# --- START OF CHANGES ---
+chrome_options = Options()
+chrome_options.add_argument("--headless=new")  # or "--headless" for older Chrome
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+
+# Use a unique, writable temp directory for user data
+user_data_dir = tempfile.mkdtemp()
+chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+
+driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()),
+    options=chrome_options
+)
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -22,99 +37,100 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Construct absolute paths for config files
 SELECTORS_PATH = os.path.join(SCRIPT_DIR, 'selectors.yaml')
 COOKIES_PATH = os.path.join(SCRIPT_DIR, 'cookies.json')
+try:
+    # Load Selectors
+    with open(SELECTORS_PATH, 'r') as file:
+        selectors = yaml.safe_load(file)
 
-# --- END OF CHANGES ---
+    # Check if cookies file exists
+    if os.path.exists(COOKIES_PATH):
+        with open(COOKIES_PATH, 'r') as file:
+            cookies = json.load(file)
+        
+        driver.get("https://www.linkedin.com")
+        for cookie in cookies:
+            driver.add_cookie(cookie)
+        
+        driver.refresh()
+        print("Loaded cookies and logged in successfully.", file=sys.stderr)
+    else:
+        driver.get("https://www.linkedin.com/login")
+        username = driver.find_element(By.ID, "username")
+        password = driver.find_element(By.ID, "password")
 
-# Initialize the Browser
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-driver.maximize_window()
+        # Load environment variables from .env file
+        load_dotenv()
 
-# Load Selectors
-with open(SELECTORS_PATH, 'r') as file:
-    selectors = yaml.safe_load(file)
+        # Retrieve credentials from environment variables
+        email = os.getenv("LINKEDIN_EMAIL")
+        pwd = os.getenv("LINKEDIN_PASSWORD")
 
-# Check if cookies file exists
-if os.path.exists(COOKIES_PATH):
-    with open(COOKIES_PATH, 'r') as file:
-        cookies = json.load(file)
-    
-    driver.get("https://www.linkedin.com")
-    for cookie in cookies:
-        driver.add_cookie(cookie)
-    
-    driver.refresh()
-    print("Loaded cookies and logged in successfully.", file=sys.stderr)
-else:
-    driver.get("https://www.linkedin.com/login")
-    username = driver.find_element(By.ID, "username")
-    password = driver.find_element(By.ID, "password")
+        # Add a check to ensure credentials are not None
+        if not email or not pwd:
+            print(json.dumps({"error": "LinkedIn credentials (LINKEDIN_EMAIL, LINKEDIN_PASSWORD) not found in .env file."}))
+            driver.quit()
+            sys.exit(1)
 
-    # Load environment variables from .env file
-    load_dotenv()
+        # Use the credentials
+        username.send_keys(email)
+        password.send_keys(pwd)
 
-    # Retrieve credentials from environment variables
-    email = os.getenv("LINKEDIN_EMAIL")
-    pwd = os.getenv("LINKEDIN_PASSWORD")
+        driver.find_element(By.XPATH, "//button[@type='submit']").click()
+        print("Logged in successfully", file=sys.stderr)
 
-    # Add a check to ensure credentials are not None
-    if not email or not pwd:
-        print(json.dumps({"error": "LinkedIn credentials (LINKEDIN_EMAIL, LINKEDIN_PASSWORD) not found in .env file."}))
-        driver.quit()
+        # Save cookies to file
+        with open(COOKIES_PATH, 'w') as file:
+            json.dump(driver.get_cookies(), file)
+        print("Cookies saved for future sessions.", file=sys.stderr)
+
+    # Get URL from command line arguments
+    if len(sys.argv) > 1:
+        job_url = sys.argv[1]
+    else:
+        print(json.dumps({"error": "No URL provided"}))
         sys.exit(1)
 
-    # Use the credentials
-    username.send_keys(email)
-    password.send_keys(pwd)
+    driver.get(job_url)
 
-    driver.find_element(By.XPATH, "//button[@type='submit']").click()
-    print("Logged in successfully", file=sys.stderr)
+    job_data = {}
 
-    # Save cookies to file
-    with open(COOKIES_PATH, 'w') as file:
-        json.dump(driver.get_cookies(), file)
-    print("Cookies saved for future sessions.", file=sys.stderr)
+    time.sleep(3) # Wait for page to load
 
-# Get URL from command line arguments
-if len(sys.argv) > 1:
-    job_url = sys.argv[1]
-else:
-    print(json.dumps({"error": "No URL provided"}))
-    sys.exit(1)
+    try:
+        job_data['title'] = driver.find_element(By.CSS_SELECTOR, "h1.t-24").text
+    except Exception as e:
+        job_data['title'] = None
+        job_data['title_error'] = str(e)
 
-driver.get(job_url)
+    try:
+        job_data['company_name'] = driver.find_element(By.CSS_SELECTOR, ".job-details-jobs-unified-top-card__company-name a").text
+    except Exception as e:
+        job_data['company_name'] = None
+        job_data['company_name_error'] = str(e)
 
-job_data = {}
+    try:
+        job_data['location'] = driver.find_element(By.CSS_SELECTOR, ".t-black--light.mt2.job-details-jobs-unified-top-card__tertiary-description-container span.tvm__text.tvm__text--low-emphasis:nth-of-type(1)").text
+    except Exception as e:
+        job_data['location'] = None
+        job_data['location_error'] = str(e)
 
-time.sleep(3) # Wait for page to load
+    try:
+        details_section = driver.find_element(By.CSS_SELECTOR, "#job-details")
+        job_data['description'] = details_section.text # Use .text to get textContent
+    except Exception as e:
+        job_data['description'] = None
+        job_data['description_error'] = str(e)
 
-try:
-    job_data['title'] = driver.find_element(By.CSS_SELECTOR, "h1.t-24").text
-except Exception as e:
-    job_data['title'] = None
-    job_data['title_error'] = str(e)
+    job_data['link'] = job_url
 
-try:
-    job_data['company_name'] = driver.find_element(By.CSS_SELECTOR, ".job-details-jobs-unified-top-card__company-name a").text
-except Exception as e:
-    job_data['company_name'] = None
-    job_data['company_name_error'] = str(e)
+    # Print data as JSON to stdout
+    print(json.dumps(job_data, ensure_ascii=False, indent=2))
 
-try:
-    job_data['location'] = driver.find_element(By.CSS_SELECTOR, ".t-black--light.mt2.job-details-jobs-unified-top-card__tertiary-description-container span.tvm__text.tvm__text--low-emphasis:nth-of-type(1)").text
-except Exception as e:
-    job_data['location'] = None
-    job_data['location_error'] = str(e)
-
-try:
-    details_section = driver.find_element(By.CSS_SELECTOR, "#job-details")
-    job_data['description'] = details_section.text # Use .text to get textContent
-except Exception as e:
-    job_data['description'] = None
-    job_data['description_error'] = str(e)
-
-job_data['link'] = job_url
-
-# Print data as JSON to stdout
-print(json.dumps(job_data, ensure_ascii=False, indent=2))
-
-driver.quit()
+    driver.quit()
+finally:
+    # This block will run no matter what, ensuring cleanup
+    if 'driver' in locals() and driver:
+        driver.quit()
+    # Clean up the temp user data directory
+    if os.path.exists(user_data_dir):
+        shutil.rmtree(user_data_dir)
