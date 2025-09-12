@@ -51,7 +51,7 @@ import { Resume } from "@/models/profile.model";
 import CreateResume from "../profile/CreateResume";
 import { getResumeList } from "@/actions/profile.actions";
 // importing router to trigger refreshes
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 type AddJobProps = {
   jobStatuses: JobStatus[];
@@ -79,6 +79,14 @@ export function AddJob({
   const [isFetching, setIsFetching] = useState(false);
   // initializing router
   const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // When the route changes to /dashboard/myjobs, refresh the data
+    if (pathname === "/dashboard/myjobs") {
+      router.refresh();
+    }
+  }, [pathname, router]);
 
   const form = useForm<z.infer<typeof AddJobFormSchema>>({
     resolver: zodResolver(AddJobFormSchema),
@@ -152,7 +160,7 @@ export function AddJob({
       const res = await (editJob ? updateJob(values) : addJob(values));
       form.reset();
       setDialogOpen(false);
-      router.refresh();
+      router.push("/dashboard/myjobs");
     });
     toast({
       description: `Job has been ${
