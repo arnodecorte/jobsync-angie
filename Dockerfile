@@ -31,6 +31,8 @@ RUN \
     else echo "Lockfile not found." && exit 1; \
     fi
 
+RUN npm install sharp
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
@@ -87,6 +89,7 @@ ENV NEXTAUTH_URL: http://localhost:3000
 ENV AUTH_TRUST_HOST: http://localhost:3000
 ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
 ENV OPENAI_API_KEY=sk-xxx
+ENV WD_MANAGER_CACHE_DIR=/tmp/wd_cache
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -96,6 +99,7 @@ RUN chown nextjs:nodejs .next
 
 # Set up /data directory with the right permissions
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
+RUN mkdir -p /tmp/wd_cache && chown -R nextjs:nodejs /tmp/wd_cache
 
 RUN npm install prisma@5.14.0 --no-save
 
