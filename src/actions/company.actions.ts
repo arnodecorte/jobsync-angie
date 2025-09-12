@@ -72,12 +72,12 @@ export const getAllCompanies = async (): Promise<any | undefined> => {
       throw new Error("Not authenticated");
     }
 
-    const comapnies = await prisma.company.findMany({
+    const companies = await prisma.company.findMany({
       where: {
         createdBy: user.id,
       },
     });
-    return comapnies;
+    return companies.filter((c) => c !== null);
   } catch (error) {
     const msg = "Failed to fetch all companies. ";
     return handleError(error, msg);

@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/utils/user.utils";
 export const getAllJobLocations = async (): Promise<any | undefined> => {
   try {
     const list = await prisma.location.findMany();
-    return list;
+    return list.filter((l) => l !== null);
   } catch (error) {
     const msg = "Failed to fetch job location list. ";
     return handleError(error, msg);
