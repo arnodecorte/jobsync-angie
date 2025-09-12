@@ -90,8 +90,10 @@ ENV AUTH_TRUST_HOST: http://localhost:3000
 ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
 ENV OPENAI_API_KEY=sk-xxx
 ENV WD_MANAGER_CACHE_DIR=/tmp/wd_cache
+ENV NPM_CONFIG_CACHE=/tmp/.npm
+ENV NPM_CONFIG_LOGLEVEL=info
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 --home /home/nextjs nextjs
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -100,6 +102,7 @@ RUN chown nextjs:nodejs .next
 # Set up /data directory with the right permissions
 RUN mkdir -p /data/files/resumes && chown -R nextjs:nodejs /data/files/resumes
 RUN mkdir -p /tmp/wd_cache && chown -R nextjs:nodejs /tmp/wd_cache
+RUN mkdir -p /tmp/.npm && chown -R nextjs:nodejs /tmp/.npm
 
 RUN npm install prisma@5.14.0 --no-save
 
