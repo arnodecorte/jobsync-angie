@@ -18,12 +18,8 @@ import io
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-# Get the absolute path of the directory where the script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # Construct absolute paths for config files
-SELECTORS_PATH = os.path.join(SCRIPT_DIR, 'selectors.yaml')
-COOKIES_PATH = os.path.join(SCRIPT_DIR, 'cookies.json')
+SELECTORS_PATH = "tools/scraper/selectors.yaml"
 
 # --- END OF CHANGES ---
 
@@ -35,13 +31,7 @@ driver.maximize_window()
 with open(SELECTORS_PATH, 'r') as file:
     selectors = yaml.safe_load(file)
 
-# Get URL from command line arguments
-if len(sys.argv) > 1:
-    job_url = sys.argv[1]
-else:
-    print(json.dumps({"error": "No URL provided"}))
-    sys.exit(1)
-
+job_url = "https://www.linkedin.com/jobs/view/4292666793" #test url
 driver.get(job_url)
 
 job_data = {}
@@ -50,11 +40,12 @@ time.sleep(3) # Wait for page to load
 
 # Close signin popup if it appears
 try:
-    wait = WebDriverWait(driver, 5)
+    wait = WebDriverWait(driver, 3)
     close_btn = wait.until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, "#base-contextual-sign-in-modal > div > section > button"))
     )
     close_btn.click()
+    print("Sign-in modal closed.")
 except Exception as e:
     print(f"Sign-in modal not found or could not be closed: {e}", file=sys.stderr)
 
@@ -62,18 +53,21 @@ except Exception as e:
 
 try:
     job_data['title'] = driver.find_element(By.CSS_SELECTOR, "#main-content h1").text
+    print(f"SUCCESS! Job Title: {job_data['title']}")
 except Exception as e:
     job_data['title'] = None
     job_data['title_error'] = str(e)
 
 try:
     job_data['company_name'] = driver.find_element(By.CSS_SELECTOR, "a.topcard__org-name-link").text
+    print(f"SUCCESS! Company Name: {job_data['company_name']}")
 except Exception as e:
     job_data['company_name'] = None
     job_data['company_name_error'] = str(e)
 
 try:
     job_data['location'] = driver.find_element(By.CSS_SELECTOR, "#main-content h4 > div:nth-child(1) > span.topcard__flavor.topcard__flavor--bullet").text
+    print(f"SUCCESS! Location: {job_data['location']}")
 except Exception as e:
     job_data['location'] = None
     job_data['location_error'] = str(e)
@@ -81,6 +75,7 @@ except Exception as e:
 try:
     details_section = driver.find_element(By.CSS_SELECTOR, "#main-content section.core-section-container.my-3.description > div > div")
     job_data['description'] = details_section.text # Use .text to get textContent
+    print(f"SUCCESS! Job Description extracted.")
 except Exception as e:
     job_data['description'] = None
     job_data['description_error'] = str(e)

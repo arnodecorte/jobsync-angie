@@ -78,17 +78,18 @@ async function getOrCreateId(
     return name; // It's already an ID, so just return it.
   }
 
-    if (!name) {
-    // Depending on schema, you might need to throw an error or handle differently
-    // For now, we'll prevent the crash. Let's assume empty string is not a valid state.
-    // A better approach might be to throw an error if the field is required.
-    return "";
+  // If name is not a UUID, it has to be a new name to look up or create.
+  // This check will make sure .tolowercase is not called on a null or empty string
+  if (!name || name.trim() === "") {
+    throw new Error(`Please provide a valid name for '${model}'`);
   }
+
+  const value = name.trim().toLowerCase();
 
   // Use a case-insensitive search for SQLite by comparing lowercased values
   const existing = await (prisma as any)[model].findFirst({
     where: {
-      value: name.toLowerCase(),
+      value: value,
     },
   });
 

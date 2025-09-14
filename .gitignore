@@ -46,3 +46,6 @@ dev.db-journal
 /blob-report/
 /playwright/.cache/
 data/files/resumes
+
+#virtual environments!
+/venv
