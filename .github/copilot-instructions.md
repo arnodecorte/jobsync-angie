@@ -15,6 +15,9 @@ JobSync is a full-stack application built with Next.js (App Router) and a SQLite
 
 ## Key Developer Workflows
 
+- The developer is a non-expert in most areas and is currently using this to build career capital and gain skills. Take this into account when suggesting solutions, ensuring they are clear and explained well for a beginner.
+- Make suggestions that foster the mentality of a seasoned and professional developer, and explain the reasoning behind them.
+
 ### Database Migrations
 
 This is the most critical workflow. When you change a model in `prisma/schema.prisma`, you **must** update the database and the Prisma Client.
