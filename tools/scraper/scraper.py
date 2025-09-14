@@ -5,6 +5,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 import time
 import json
 from dotenv import load_dotenv
@@ -12,8 +13,9 @@ import os
 import yaml
 import sys
 import io
+import tempfile
 
-# --- START OF CHANGES ---
+# Ensure that the output is in UTF-8
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -25,10 +27,17 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SELECTORS_PATH = os.path.join(SCRIPT_DIR, 'selectors.yaml')
 COOKIES_PATH = os.path.join(SCRIPT_DIR, 'cookies.json')
 
-# --- END OF CHANGES ---
+# Create a temporary user data directory for Chrome
+tempfile_dir = tempfile.TemporaryDirectory()
+
+chrome_options = Options()
+chrome_options.add_argument("--headless=new")  # Use new headless mode for Chrome 109+
+chrome_options.add_argument("--no-sandbox") # Bypass OS security model
+chrome_options.add_argument("--disable-dev-shm-usage") # Overcome limited resource problems
+chrome_options.add_argument(f"--user-data-dir={tempfile_dir.name}") # Use temporary user data directory
 
 # Initialize the Browser
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 driver.maximize_window()
 
 # Load Selectors
@@ -90,4 +99,6 @@ job_data['link'] = job_url
 # Print data as JSON to stdout
 print(json.dumps(job_data, ensure_ascii=False, indent=2))
 
+# quit and clean
 driver.quit()
+tempfile_dir.cleanup()
